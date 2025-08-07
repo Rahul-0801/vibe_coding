@@ -7,4 +7,13 @@ jobs:
       - name: Send sample input to FastAPI
         run: |
             echo "Sending sample input to /predict endpoint..."
-            python3 predict_test.py
+            python3 - <<EOF
+            import requests
+            data = {
+                "files_changed": 10,
+                "test_pass_rate": 0.85,
+                "build_time_sec": 120
+              }
+            response = requests.post("http://localhost:8000/predict", json=data)
+            print("Response:", response.json())
+            EOF
