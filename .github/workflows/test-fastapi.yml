@@ -1,19 +1,45 @@
 name: Predict Deployment Risk
 on: [push]
 jobs:
-  predict:
+  test-api:
     runs-on: ubuntu-latest
     steps:
-      - name: Send sample input to FastAPI
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
         run: |
-            echo "Sending sample input to /predict endpoint..."
-            python3 - <<EOF
-            import requests
-            data = {
-                "files_changed": 10,
-                "test_pass_rate": 0.85,
-                "build_time_sec": 120
-              }
-            response = requests.post("http://localhost:8000/predict", json=data)
-            print("Response:", response.json())
-            EOF
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Train model to generate .pkl file
+        run: python Train_data.py
+
+      - name: Run FastAPI server in background
+        run: uvicorn server:app --host 0.0.0.0 --port 8000 &
+
+      - name: Wait for server to start
+        run: sleep 5
+
+      - name: Test /predict endpoint
+        run: |
+          echo "Sending sample input to /predict endpoint..."
+          python3 - <<EOF
+          import requests
+          import sys
+          try:
+              url = "http://127.0.0.1:8000/predict"
+              payload = {"files_changed": 15, "test_pass_rate": 0.6, "build_time_sec": 200}
+              response = requests.post(url, json=payload)
+              response.raise_for_status()  # Fail the step if the request fails
+              print("Prediction Response:", response.json())
+          except requests.exceptions.RequestException as e:
+              print(f"Request failed: {e}", file=sys.stderr)
+              sys.exit(1)
+          EOF
+
