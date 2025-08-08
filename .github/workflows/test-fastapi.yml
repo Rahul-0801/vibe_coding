@@ -39,24 +39,20 @@ jobs:
 
       - name: Notify on failure prediction
         if: steps.prediction.outputs.prediction == 'high_risk'
-        uses: dawidd6/action-send-gmail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.GMAIL_USERNAME }}
-          password: ${{ secrets.GMAIL_PASSWORD }}
-          subject: 'Deployment Risk Prediction: High Risk for ${{ github.repository }}'
-          body: |
+        run: python scripts/send_email.py
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          RECIPIENT_EMAIL: 1703313048.it@gmail.com # <-- IMPORTANT: Change this to your email address
+          EMAIL_SUBJECT: 'Deployment Risk Prediction: High Risk for ${{ github.repository }}'
+          EMAIL_BODY: |
             A high risk of deployment failure was predicted for commit ${{ github.sha }}.
 
             Please review the changes before deploying.
 
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          to: 1703313048.it@gmail.com # <-- IMPORTANT: Change this to your email address
-          from: ${{ secrets.GMAIL_USERNAME }}
 
       - name: Stop FastAPI server
         if: always() # This ensures the server is stopped even if previous steps fail
         run: pkill uvicorn
   
-
