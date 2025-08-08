@@ -28,7 +28,7 @@ jobs:
 
       - name: Notify on failure prediction
         if: steps.prediction.outputs.prediction == 'high_risk'
-        uses: dawidd6/action-send-gmail@v3
+        uses: Rahul-0801/vibe_coding@v1
         with:
           server_address: smtp.gmail.com
           server_port: 465
