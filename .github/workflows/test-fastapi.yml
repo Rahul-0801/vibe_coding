@@ -22,19 +22,26 @@ jobs:
           uvicorn server:app --host 0.0.0.0 --port 8000 &
           sleep 5 # Give the server a moment to start
 
-      - name: Send sample input to FastAPI
-        run: |
-          echo "Sending sample input to /predict endpoint..."
-          python -c "
-          import requests, sys
-          try:
-              url = 'http://127.0.0.1:8000/predict'
-              payload = {'files_changed': 10, 'test_pass_rate': 0.85, 'build_time_sec': 100}
-              response = requests.post(url, json=payload)
-              response.raise_for_status() # Raise an exception for bad status codes
-              print('Prediction Response:', response.json())
-          except requests.exceptions.RequestException as e:
-              print(f'Request failed: {e}')
-              sys.exit(1)
-          "
+      - name: Get prediction from FastAPI
+        id: prediction
+        run: python scripts/get_prediction.py
+
+      - name: Notify on failure prediction
+        if: steps.prediction.outputs.prediction == 'high_risk'
+        uses: dawidd6/action-send-gmail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_PASSWORD }}
+          subject: 'Deployment Risk Prediction: High Risk for ${{ github.repository }}'
+          body: |
+            A high risk of deployment failure was predicted for commit ${{ github.sha }}.
+
+            Please review the changes before deploying.
+
+            Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: 1703313048.it@gmail.com # <-- IMPORTANT: Change this to your email address
+          from: ${{ secrets.GMAIL_USERNAME }}
+
 
