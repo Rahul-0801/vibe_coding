@@ -11,7 +11,7 @@ def get_prediction():
     try:
         url = 'http://127.0.0.1:8000/predict'
         # This payload is for demonstration. You might want to make it dynamic.
-        payload = {'files_changed': 10, 'test_pass_rate': 0.85, 'build_time_sec': 100}
+        payload = {'files_changed': 20, 'test_pass_rate': 0.65, 'build_time_sec': 200}
 
         print("Sending sample input to /predict endpoint...")
         response = requests.post(url, json=payload)
