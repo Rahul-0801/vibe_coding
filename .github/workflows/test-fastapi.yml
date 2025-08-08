@@ -20,7 +20,10 @@ jobs:
       - name: Start FastAPI server
         run: |
           uvicorn server:app --host 0.0.0.0 --port 8000 &
-          sleep 5 # Give the server a moment to start
+      
+      - name: Wait for FastAPI server to be ready
+        run: |
+          timeout 30s bash -c 'until curl -s --fail http://127.0.0.1:8000/ > /dev/null; do echo "Waiting for server..."; sleep 1; done'
 
       - name: Get prediction from FastAPI
         id: prediction
@@ -44,4 +47,8 @@ jobs:
           to: 1703313048.it@gmail.com # <-- IMPORTANT: Change this to your email address
           from: ${{ secrets.GMAIL_USERNAME }}
 
+      - name: Stop FastAPI server
+        if: always() # This ensures the server is stopped even if previous steps fail
+        run: pkill uvicorn
+  
 
